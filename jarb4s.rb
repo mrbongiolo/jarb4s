@@ -98,6 +98,8 @@ module JARB4S
 
           title = item.at_css('span.market_listing_item_name').text
 
+          puts "getting item #{title}"
+
           li = Item.find_by_title(title)
           
           if li
@@ -115,6 +117,7 @@ module JARB4S
             li.save
 
             temporary_market_hash_name = li.url.to_s.match(/http:\/\/steamcommunity.com\/market\/listings\/570\/([\w|\W]*)/)[1]
+            puts "temporary market_hash_name: #{temporary_market_hash_name}"
             json_listing = get_market_listing_render(temporary_market_hash_name)
 
             li.steam_class_id =         json_listing['assets'].first[1].first[1].first[1]['classid']
