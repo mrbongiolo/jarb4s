@@ -73,7 +73,7 @@ module JARB4S
     end
 
     def get_market_listing_render(market_hash_name, count = 1)
-      get_json("http://steamcommunity.com/market/listings/570/#{URI.encode(market_hash_name)}/render?count=#{count}")
+      get_json("http://steamcommunity.com/market/listings/570/#{market_hash_name}/render?count=#{count}")
     end
 
     def get_api_item_class_info(steam_class_id)
