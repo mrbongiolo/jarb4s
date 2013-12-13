@@ -10,7 +10,7 @@ module JARB4S
 
     Bundler.setup(:default)
 
-    require 'sqlite3'
+    #require 'sqlite3'
     require 'active_record'
     require 'json'
     require 'money'
