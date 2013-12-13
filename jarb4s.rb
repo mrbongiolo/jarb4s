@@ -21,13 +21,13 @@ module JARB4S
 
       require './models/item.rb'
 
-      #ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'] || 'postgres://localhost/mydb')
-      ActiveRecord::Base.establish_connection(
-          adapter:  'sqlite3',
-          database: 'db/development.sqlite3',
-          pool: 5,
-          timeout: 5000
-      )
+      ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'] || 'postgres://localhost/mydb')
+      #ActiveRecord::Base.establish_connection(
+      #    adapter:  'sqlite3',
+      #    database: 'db/development.sqlite3',
+      #    pool: 5,
+      #    timeout: 5000
+      #)
     end
 
     def create_database
