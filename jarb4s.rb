@@ -114,7 +114,8 @@ module JARB4S
 
             li.save
 
-            json_listing = get_market_listing_render(li.title)
+            temporary_market_hash_name = li.url.to_s.match(/http:\/\/steamcommunity.com\/market\/listings\/570\/([\w|\W]*)/)[1]
+            json_listing = get_market_listing_render(temporary_market_hash_name)
 
             li.steam_class_id =         json_listing['assets'].first[1].first[1].first[1]['classid']
             li.steam_instance_id =      json_listing['assets'].first[1].first[1].first[1]['instanceid']
