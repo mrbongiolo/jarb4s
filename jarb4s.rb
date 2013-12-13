@@ -35,8 +35,8 @@ module JARB4S
         ActiveRecord::Schema.define do
           create_table :items do |table|
             table.column  :title,                       :string,                  null: false
-            table.column  :url,                         :string
-            table.column  :image_url,                   :string
+            table.column  :url,                         :text
+            table.column  :image_url,                   :text
             table.column  :quantity,                    :integer
             table.column  :starting_price_cents,        :integer, :default => 0,  null: false
             table.column  :starting_price_currency,     :string,                  null: false
