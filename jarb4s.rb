@@ -53,6 +53,8 @@ module JARB4S
             table.column  :steam_class_id,              :string
             table.column  :steam_instance_id,           :string
             table.column  :steam_market_hash_name,      :string
+
+            table.timestamps
           end
         end
       rescue
