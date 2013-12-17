@@ -47,7 +47,7 @@ module JARB4S
   class Dota2 < JARB4S::Base
     def get_json(url)
       response = JSON.parse( open(url).read )
-      if response['success']
+      if response['success'] || response['result']['success'] #the second case is needed for the 'get_api_item_class_info'
         response
       else
         @retry_connecting_count += 1
