@@ -6,7 +6,7 @@ module JARB4S
 
   class Base
 
-    retry_connecting_count = 0
+    @retry_connecting_count
 
     require 'rubygems'
     require 'bundler'
@@ -25,6 +25,8 @@ module JARB4S
     require 'open-uri'
 
     def initialize
+
+      @retry_connecting_count = 0
 
       require './models/item.rb'
 
@@ -45,12 +47,12 @@ module JARB4S
   class Dota2 < JARB4S::Base
     def get_json(url)
       response = JSON.parse( open(url).read )
-      if response['success'] == true
+      if response['success']
         response
       else
-        retry_connecting_count += 1
-        if retry_connecting_count == MAX_RETRY_CONNECTING
-          retry_connecting_count = 0
+        @retry_connecting_count += 1
+        if @retry_connecting_count == MAX_RETRY_CONNECTING
+          @retry_connecting_count = 0
           raise Exception, "[ERROR] ==> Couldn't fetch url: '#{url}'"
         end
         sleep(2)
