@@ -2,15 +2,22 @@
 module JARB4S
   
   STEAM_API_KEY = "D6025367E85E647787162E40CE8B1E58"
+  MAX_RETRY_CONNECTING = 3
 
   class Base
+
+    retry_connecting_count = 0
 
     require 'rubygems'
     require 'bundler'
 
-    Bundler.setup(:default)
+    if ENV['DATABASE_URL']
+      Bundler.setup(:default, :production)
+    else
+      Bundler.setup(:default, :development)
+      require 'sqlite3'
+    end
 
-    #require 'sqlite3'
     require 'active_record'
     require 'json'
     require 'money'
@@ -37,7 +44,18 @@ module JARB4S
 
   class Dota2 < JARB4S::Base
     def get_json(url)
-      JSON.parse( open(url).read )
+      response = JSON.parse( open(url).read )
+      if response['success'] == true
+        response
+      else
+        retry_connecting_count += 1
+        if retry_connecting_count == MAX_RETRY_CONNECTING
+          retry_connecting_count = 0
+          raise Exception, "[ERROR] ==> Couldn't fetch url: '#{url}'"
+        end
+        sleep(2)
+        get_json(url)
+      end
     end
 
     def get_market_search_render(query = '', start = 0, count = 100)
@@ -53,84 +71,87 @@ module JARB4S
     end
 
     def grab_all_them_items(query = '')
-
-      json = get_market_search_render(query) #initial query
-      
-      total_count = json['total_count'].to_i
-      grabed =      0
-
       begin
-        doc =  Nokogiri::HTML( json['results_html'] )
+        json = get_market_search_render(query) #initial query
+        
+        total_count = json['total_count'].to_i
+        grabed =      0
 
-        doc.css('.market_listing_table_header').remove #remove the table header, we don't need it
+        begin
+          doc =  Nokogiri::HTML( json['results_html'] )
 
-        items = doc.css('a.market_listing_row_link')
+          doc.css('.market_listing_table_header').remove #remove the table header, we don't need it
 
-        items.each do |item|
+          items = doc.css('a.market_listing_row_link')
 
-          title = item.at_css('span.market_listing_item_name').text
+          items.each do |item|
 
-          puts "getting item #{title}"
+            title = item.at_css('span.market_listing_item_name').text
 
-          li = Item.find_by_title(title)
-          
-          if li
-            li.quantity =       item.at_css('.market_listing_num_listings_qty').remove.text #we grab the quantity text and also remove it from the node so that it doesn't interfere in the price
-            li.starting_price = item.at_css('.market_listing_right_cell.market_listing_num_listings > span').text.gsub(/\s+/,' ').gsub('Starting at:','')
-            li.save
-          else
-            li = Item.new(title: title)
+            puts "getting item #{title}"
 
-            li.url =            item.attr('href')
-            li.image_url =      item.at_css('.market_listing_item_img').attr('src')
-            li.quantity =       item.at_css('.market_listing_num_listings_qty').remove.text #we grab the quantity text and also remove it from the node so that it doesn't interfere in the price
-            li.starting_price = item.at_css('.market_listing_right_cell.market_listing_num_listings > span').text.gsub(/\s+/,' ').gsub('Starting at:','')
+            li = Item.find_by_title(title)
+            
+            if li
+              li.quantity =       item.at_css('.market_listing_num_listings_qty').remove.text #we grab the quantity text and also remove it from the node so that it doesn't interfere in the price
+              li.starting_price = item.at_css('.market_listing_right_cell.market_listing_num_listings > span').text.gsub(/\s+/,' ').gsub('Starting at:','')
+              li.save
+            else
+              li = Item.new(title: title)
 
-            li.save
+              li.url =            item.attr('href')
+              li.image_url =      item.at_css('.market_listing_item_img').attr('src')
+              li.quantity =       item.at_css('.market_listing_num_listings_qty').remove.text #we grab the quantity text and also remove it from the node so that it doesn't interfere in the price
+              li.starting_price = item.at_css('.market_listing_right_cell.market_listing_num_listings > span').text.gsub(/\s+/,' ').gsub('Starting at:','')
 
-            temporary_market_hash_name = li.url.to_s.match(/http:\/\/steamcommunity.com\/market\/listings\/570\/([\w|\W]*)/)[1]
-            puts "temporary market_hash_name: #{temporary_market_hash_name}"
-            json_listing = get_market_listing_render(temporary_market_hash_name)
+              li.save
 
-            li.steam_class_id =         json_listing['assets'].first[1].first[1].first[1]['classid']
-            li.steam_instance_id =      json_listing['assets'].first[1].first[1].first[1]['instanceid']
-            li.steam_market_hash_name = json_listing['assets'].first[1].first[1].first[1]['market_hash_name']
+              temporary_market_hash_name = li.url.to_s.match(/http:\/\/steamcommunity.com\/market\/listings\/570\/([\w|\W]*)/)[1]
+              puts "temporary market_hash_name: #{temporary_market_hash_name}"
+              json_listing = get_market_listing_render(temporary_market_hash_name)
 
-            li.save
+              li.steam_class_id =         json_listing['assets'].first[1].first[1].first[1]['classid']
+              li.steam_instance_id =      json_listing['assets'].first[1].first[1].first[1]['instanceid']
+              li.steam_market_hash_name = json_listing['assets'].first[1].first[1].first[1]['market_hash_name']
 
-            json_item_class_info = get_api_item_class_info(li.steam_class_id)
+              li.save
 
-            tags = json_item_class_info['result'].first[1]['tags']
+              json_item_class_info = get_api_item_class_info(li.steam_class_id)
 
-            tags.each do |tag|
-              if tag[1]['category'] == 'Quality'
-                li.quality = tag[1]['name']
+              tags = json_item_class_info['result'].first[1]['tags']
+
+              tags.each do |tag|
+                if tag[1]['category'] == 'Quality'
+                  li.quality = tag[1]['name']
+                end
+                if tag[1]['category'] == 'Rarity'
+                  li.rarity = tag[1]['name']
+                end
+                if tag[1]['category'] == 'Type'
+                  li.item_type = tag[1]['name']
+                end
+                if tag[1]['category'] == 'Hero'
+                  li.hero = tag[1]['name']
+                end
               end
-              if tag[1]['category'] == 'Rarity'
-                li.rarity = tag[1]['name']
-              end
-              if tag[1]['category'] == 'Type'
-                li.item_type = tag[1]['name']
-              end
-              if tag[1]['category'] == 'Hero'
-                li.hero = tag[1]['name']
-              end
+
+              li.save
             end
 
-            li.save
           end
 
-        end
+          pagesize = json['pagesize'].to_i
+          start =    json['start'].to_i
 
-        pagesize = json['pagesize'].to_i
-        start =    json['start'].to_i
+          grabed += pagesize
+          start +=  pagesize
 
-        grabed += pagesize
-        start +=  pagesize
+          json = get_market_search_render(query, start, pagesize)
 
-        json = get_market_search_render(query, start, pagesize)
-
-      end while grabed < total_count
+        end while grabed < total_count
+      rescue Exception => e
+        puts e.message
+      end
     end
 
     def show_items(limit = nil)
