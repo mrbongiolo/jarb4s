@@ -21,46 +21,18 @@ module JARB4S
 
       require './models/item.rb'
 
-      ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'] || 'postgres://localhost/mydb')
-      #ActiveRecord::Base.establish_connection(
-      #    adapter:  'sqlite3',
-      #    database: 'db/development.sqlite3',
-      #    pool: 5,
-      #    timeout: 5000
-      #)
-    end
-
-    def create_database
-      begin
-        ActiveRecord::Schema.define do
-          create_table :items do |table|
-            table.column  :title,                       :string,                  null: false
-            table.column  :url,                         :text
-            table.column  :image_url,                   :text
-            table.column  :quantity,                    :integer
-            table.column  :starting_price_cents,        :integer, :default => 0,  null: false
-            table.column  :starting_price_currency,     :string,                  null: false
-            #table.column  :highest_price_cents,        :integer, :default => 0,  null: false
-            #table.column  :highest_price_currency,     :string,                  null: false
-            #table.column  :average_price_cents,        :integer, :default => 0,  null: false
-            #table.column  :average_price_currency,     :string,                  null: false
-            #table.column  :latest_sold_price_cents,     :integer, :default => 0,  null: false
-            #table.column  :latest_sold_price_currency,  :string,                  null: false
-            table.column  :quality,                     :string
-            table.column  :rarity,                      :string                                     #like: common, uncommon, rare, mythical
-            table.column  :item_type,                   :string                                     #like: bow, claw, bracer, taunt
-            table.column  :hero,                        :string
-            table.column  :steam_class_id,              :string
-            table.column  :steam_instance_id,           :string
-            table.column  :steam_market_hash_name,      :string
-
-            table.timestamps
-          end
-        end
-      rescue
-        puts '[error occured]'
+      if ENV['DATABASE_URL'] #production on Heroku
+        ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'])
+      else
+        ActiveRecord::Base.establish_connection(
+            adapter:  'sqlite3',
+            database: 'db/development.sqlite3',
+            pool: 5,
+            timeout: 5000
+        )
       end
     end
+
   end
 
   class Dota2 < JARB4S::Base
