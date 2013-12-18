@@ -90,7 +90,7 @@ module JARB4S
 
             title = item.at_css('span.market_listing_item_name').text
 
-            puts "getting item #{title}"
+            logger.info "getting item #{title}"
 
             li = Item.find_by_title(title)
             
@@ -112,36 +112,41 @@ module JARB4S
 
               li.save
 
-              temporary_market_hash_name = li.url.to_s.match(/http:\/\/steamcommunity.com\/market\/listings\/570\/([\w|\W]*)/)[1]
-              puts "temporary market_hash_name: #{temporary_market_hash_name}"
-              json_listing = get_market_listing_render(temporary_market_hash_name)
+              begin
+                temporary_market_hash_name = li.url.to_s.match(/http:\/\/steamcommunity.com\/market\/listings\/570\/([\w|\W]*)/)[1]
+                logger.info "temporary market_hash_name: #{temporary_market_hash_name}"
+                json_listing = get_market_listing_render(temporary_market_hash_name)
 
-              li.steam_class_id =         json_listing['assets'].first[1].first[1].first[1]['classid']
-              li.steam_instance_id =      json_listing['assets'].first[1].first[1].first[1]['instanceid']
-              li.steam_market_hash_name = json_listing['assets'].first[1].first[1].first[1]['market_hash_name']
+                li.steam_class_id =         json_listing['assets'].first[1].first[1].first[1]['classid']
+                li.steam_instance_id =      json_listing['assets'].first[1].first[1].first[1]['instanceid']
+                li.steam_market_hash_name = json_listing['assets'].first[1].first[1].first[1]['market_hash_name']
 
-              li.save
+                li.save
 
-              json_item_class_info = get_api_item_class_info(li.steam_class_id)
+                json_item_class_info = get_api_item_class_info(li.steam_class_id)
 
-              tags = json_item_class_info['result'].first[1]['tags']
+                tags = json_item_class_info['result'].first[1]['tags']
 
-              tags.each do |tag|
-                if tag[1]['category'] == 'Quality'
-                  li.quality = tag[1]['name']
+                tags.each do |tag|
+                  if tag[1]['category'] == 'Quality'
+                    li.quality = tag[1]['name']
+                  end
+                  if tag[1]['category'] == 'Rarity'
+                    li.rarity = tag[1]['name']
+                  end
+                  if tag[1]['category'] == 'Type'
+                    li.item_type = tag[1]['name']
+                  end
+                  if tag[1]['category'] == 'Hero'
+                    li.hero = tag[1]['name']
+                  end
                 end
-                if tag[1]['category'] == 'Rarity'
-                  li.rarity = tag[1]['name']
-                end
-                if tag[1]['category'] == 'Type'
-                  li.item_type = tag[1]['name']
-                end
-                if tag[1]['category'] == 'Hero'
-                  li.hero = tag[1]['name']
-                end
+
+                li.save
+              rescue Exception => e
+                logger.error e.message
+                logger.error e.backtrace.inspect
               end
-
-              li.save
             end
 
           end
@@ -156,7 +161,8 @@ module JARB4S
 
         end while grabed < total_count
       rescue Exception => e
-        puts e.message
+        logger.error e.message
+        logger.error e.backtrace.inspect
       end
     end
 
