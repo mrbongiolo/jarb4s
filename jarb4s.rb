@@ -7,6 +7,7 @@ module JARB4S
   class Base
 
     @retry_connecting_count
+    @logger
 
     require 'rubygems'
     require 'bundler'
@@ -23,11 +24,13 @@ module JARB4S
     require 'money'
     require 'nokogiri'
     require 'open-uri'
+    require 'logger'
 
     def initialize
 
       @retry_connecting_count = 0
-
+      @logger = Logger.new(STDOUT)
+      
       require './models/item.rb'
 
       if ENV['DATABASE_URL'] #production on Heroku
@@ -90,7 +93,7 @@ module JARB4S
 
             title = item.at_css('span.market_listing_item_name').text
 
-            logger.info "getting item #{title}"
+            @logger.info "getting item #{title}"
 
             li = Item.find_by_title(title)
             
@@ -114,7 +117,7 @@ module JARB4S
 
               begin
                 temporary_market_hash_name = li.url.to_s.match(/http:\/\/steamcommunity.com\/market\/listings\/570\/([\w|\W]*)/)[1]
-                logger.info "temporary market_hash_name: #{temporary_market_hash_name}"
+                @logger.info "temporary market_hash_name: #{temporary_market_hash_name}"
                 json_listing = get_market_listing_render(temporary_market_hash_name)
 
                 li.steam_class_id =         json_listing['assets'].first[1].first[1].first[1]['classid']
@@ -144,8 +147,8 @@ module JARB4S
 
                 li.save
               rescue Exception => e
-                logger.error e.message
-                logger.error e.backtrace.inspect
+                @logger.error e.message
+                @logger.error e.backtrace.inspect
               end
             end
 
@@ -161,8 +164,8 @@ module JARB4S
 
         end while grabed < total_count
       rescue Exception => e
-        logger.error e.message
-        logger.error e.backtrace.inspect
+        @logger.error e.message
+        @logger.error e.backtrace.inspect
       end
     end
 
