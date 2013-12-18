@@ -94,12 +94,16 @@ module JARB4S
 
             li = Item.find_by_title(title)
             
-            if li
+            unless li
+              li = Item.new(title: title)
+            end
+
+            if li.steam_class_id.present? && li.quality.present?
+              
               li.quantity =       item.at_css('.market_listing_num_listings_qty').remove.text #we grab the quantity text and also remove it from the node so that it doesn't interfere in the price
               li.starting_price = item.at_css('.market_listing_right_cell.market_listing_num_listings > span').text.gsub(/\s+/,' ').gsub('Starting at:','')
               li.save
             else
-              li = Item.new(title: title)
 
               li.url =            item.attr('href')
               li.image_url =      item.at_css('.market_listing_item_img').attr('src')
