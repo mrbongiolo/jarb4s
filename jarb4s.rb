@@ -1,7 +1,7 @@
 #J.A.R.B.4.S. - Just Another Ruthless Bot 4 Steam
 module JARB4S
   
-  STEAM_API_KEY = "D6025367E85E647787162E40CE8B1E58"
+  STEAM_API_KEY = "MY_API_KEY"
   MAX_RETRY_CONNECTING = 3
 
   class Base
@@ -183,7 +183,7 @@ module JARB4S
 
 
     #classid:231926809  #this recipe was already sold, I just wanna know if the classid is forever or not... it seems to be
-    #http://api.steampowered.com/ISteamEconomy/GetAssetClassInfo/v0001?key=D6025367E85E647787162E40CE8B1E58&format=json&language=en&appid=570&class_count=1&classid0=231926809
+    #http://api.steampowered.com/ISteamEconomy/GetAssetClassInfo/v0001?key=MY_API_KEY&format=json&language=en&appid=570&class_count=1&classid0=231926809
 
     #this seems to return the price history of the item (only works when logged in)
     #http://steamcommunity.com/market/pricehistory/?appid=570&market_hash_name=Treasure%20of%20Incandescent%20Wax
